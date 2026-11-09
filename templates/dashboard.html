@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% set section = 'dashboard' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 id="greeting" data-user="{{ session.username }}">Dashboard</h1>
+    <div class="muted small-text" id="clock"></div>
+  </div>
+  <a class="btn primary" href="{{ url_for('pos') }}"><i class="bi bi-plus-lg me-1"></i>New sale</a>
+</div>
+
+<div class="stats">
+  <div class="card stat"><span class="stat-icon bg-primary-subtle text-primary"><i
+        class="bi bi-cash-coin"></i></span><span class="stat-label">Sales today</span><span class="stat-value">{{
+      today.revenue|money }}</span></div>
+  <div class="card stat"><span class="stat-icon bg-success-subtle text-success"><i
+        class="bi bi-receipt"></i></span><span class="stat-label">Transactions today</span><span class="stat-value">{{
+      today.n }}</span></div>
+  <div class="card stat"><span class="stat-icon bg-info-subtle text-info"><i class="bi bi-box-seam"></i></span><span
+      class="stat-label">Active products</span><span class="stat-value">{{ stock.products }}</span></div>
+  <div class="card stat {{ 'alert' if stock.low|int }}"><span class="stat-icon bg-warning-subtle text-warning"><i
+        class="bi bi-exclamation-triangle"></i></span><span class="stat-label">Low or out of stock</span><span
+      class="stat-value">{{ stock.low|int }}</span></div>
+</div>
+
+<div class="two-col">
+  <section class="card">
+    <div class="card-head">
+      <h2><i class="bi bi-exclamation-triangle text-warning me-2"></i>Needs restocking</h2><a
+        href="{{ url_for('inventory', low=1) }}">View all</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th class="num">Stock</th>
+          <th class="num">Reorder at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in low_items %}
+        <tr>
+          <td>{{ p.name }} <span class="muted">{{ p.sku }}</span></td>
+          <td class="num"><span class="badge {{ 'danger' if p.stock <= 0 else 'warn' }}">{{ p.stock }}</span></td>
+          <td class="num">{{ p.reorder_level }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="muted center">Everything is above its reorder level.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2><i class="bi bi-clock-history text-primary me-2"></i>Recent sales</h2><a href="{{ url_for('sales') }}">View
+        all</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Receipt</th>
+          <th>Time</th>
+          <th>Payment</th>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in recent %}
+        <tr class="{{ 'inactive' if s.status == 'voided' }}">
+          <td><a href="{{ url_for('sale_detail', sale_id=s.id) }}">{{ s.id|receipt_no }}</a>{% if s.status == 'voided'
+            %} <span class="badge">Voided</span>{% endif %}</td>
+          <td>{{ s.created_at.strftime('%d %b %H:%M') }}</td>
+          <td>{{ s.payment_method|capitalize }}</td>
+          <td class="num">{{ s.total|money }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="muted center">No sales yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function () {
+    var g = document.getElementById('greeting'), c = document.getElementById('clock');
+    function tick() {
+      var d = new Date(), h = d.getHours();
+      g.textContent = (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + ', ' + g.dataset.user;
+      c.textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) +
+        ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    tick(); setInterval(tick, 1000);
+  })();
+</script>
+{% endblock %}

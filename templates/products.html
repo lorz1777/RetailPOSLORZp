@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set section = 'products' %}
+{% block title %}Products{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Products</h1>
+  <a class="btn primary" href="{{ url_for('product_new') }}">Add product</a>
+</div>
+
+<form class="toolbar" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, SKU, barcode or category">
+  <label class="check"><input type="checkbox" name="inactive" value="1" {{ 'checked' if show_inactive }}> Show inactive</label>
+  <button class="btn" type="submit">Search</button>
+</form>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>SKU</th><th>Name</th><th>Category</th><th class="num">Price</th><th class="num">Cost</th><th class="num">Stock</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for p in products %}
+      <tr class="{{ 'inactive' if not p.is_active }}">
+        <td>{{ p.sku }}</td>
+        <td>{{ p.name }}{% if not p.is_active %} <span class="badge">Inactive</span>{% endif %}</td>
+        <td>{{ p.category or '' }}</td>
+        <td class="num">{{ p.price|money }}</td>
+        <td class="num">{{ p.cost|money }}</td>
+        <td class="num">{{ p.stock }}{% if p.is_active and p.stock <= p.reorder_level %} <span class="badge {{ 'danger' if p.stock <= 0 else 'warn' }}">{{ 'Out' if p.stock <= 0 else 'Low' }}</span>{% endif %}</td>
+        <td class="actions">
+          <a class="btn small" href="{{ url_for('product_edit', pid=p.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('product_toggle', pid=p.id) }}" class="inline">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <button class="btn small" type="submit">{{ 'Deactivate' if p.is_active else 'Activate' }}</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted center">No products found.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted small-text">Products with sales history are deactivated rather than deleted, so past receipts and reports stay accurate. Inactive products do not appear at checkout.</p>
+{% endblock %}

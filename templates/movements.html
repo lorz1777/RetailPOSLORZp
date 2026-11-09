@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set section = 'inventory' %}
+{% block title %}Stock history{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Stock history</h1>
+  <a class="btn" href="{{ url_for('inventory') }}">Back to inventory</a>
+</div>
+{% if pid %}<p class="muted">Showing one product only. <a href="{{ url_for('stock_movements') }}">Show all</a></p>{% endif %}
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>When</th><th>Product</th><th>Reason</th><th class="num">Change</th><th>Note</th><th>By</th></tr>
+    </thead>
+    <tbody>
+    {% for m in movements %}
+      <tr>
+        <td>{{ m.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td><a href="{{ url_for('stock_movements', product_id=m.product_id) }}">{{ m.name }}</a> <span class="muted small-text">{{ m.sku }}</span></td>
+        <td>
+          {% if m.sale_id %}<a href="{{ url_for('sale_detail', sale_id=m.sale_id) }}">{{ m.reason|capitalize }} {{ m.sale_id|receipt_no }}</a>
+          {% else %}{{ {'opening': 'Opening stock', 'restock': 'Restock', 'damage': 'Damaged / lost', 'count': 'Stock count'}.get(m.reason, m.reason) }}{% endif %}
+        </td>
+        <td class="num strong {{ 'loss' if m.change_qty < 0 else 'gain' }}">{{ '%+d' % m.change_qty }}</td>
+        <td>{{ m.note or '' }}</td>
+        <td>{{ m.username or '' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted center">No stock movements yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted small-text">Showing the latest 200 movements.</p>
+{% endblock %}

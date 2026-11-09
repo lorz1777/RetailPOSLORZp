@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<form method="post" class="card login-card">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="login-logo"><i class="bi bi-shop"></i></div>
+  <h1>{{ store_name }}</h1>
+  <p class="muted">Administrator sign in</p>
+  <label>Username
+    <input name="username" autocomplete="username" required autofocus>
+  </label>
+  <label>Password
+    <input type="password" name="password" autocomplete="current-password" required>
+  </label>
+  <button class="btn primary block" type="submit">Sign in</button>
+</form>
+{% endblock %}

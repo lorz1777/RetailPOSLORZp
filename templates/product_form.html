@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% set section = 'products' %}
+{% block title %}{{ 'Edit product' if product else 'Add product' }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<form method="post" class="card stack">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <h1>{{ 'Edit product' if product else 'Add product' }}</h1>
+
+  <div class="form-grid">
+    <label>SKU
+      <input name="sku" value="{{ form.sku or '' }}" maxlength="40" required {{ 'autofocus' if not product }}>
+    </label>
+    <label>Barcode <span class="muted">(optional)</span>
+      <input name="barcode" value="{{ form.barcode or '' }}" maxlength="64" inputmode="numeric">
+    </label>
+  </div>
+
+  <label>Name
+    <input name="name" value="{{ form.name or '' }}" maxlength="150" required>
+  </label>
+
+  <label>Category <span class="muted">(optional)</span>
+    <input name="category" value="{{ form.category or '' }}" maxlength="80">
+  </label>
+
+  <div class="form-grid">
+    <label>Selling price
+      <input name="price" value="{{ form.price or '' }}" inputmode="decimal" placeholder="0.00" required>
+    </label>
+    <label>Cost price <span class="muted">(for profit reports)</span>
+      <input name="cost" value="{{ form.cost or '' }}" inputmode="decimal" placeholder="0.00">
+    </label>
+  </div>
+
+  <div class="form-grid">
+    <label>Reorder level <span class="muted">(low-stock warning)</span>
+      <input type="number" name="reorder_level" value="{{ form.reorder_level or 0 }}" min="0" step="1" required>
+    </label>
+    {% if product %}
+      <label>Current stock
+        <input value="{{ product.stock }}" disabled>
+        <span class="muted small-text">Change stock from the <a href="{{ url_for('inventory') }}">Inventory</a> page so every change is logged.</span>
+      </label>
+    {% else %}
+      <label>Opening stock
+        <input type="number" name="stock" value="{{ form.stock or 0 }}" min="0" step="1">
+      </label>
+    {% endif %}
+  </div>
+
+  <div class="row">
+    <button class="btn primary" type="submit">{{ 'Save changes' if product else 'Add product' }}</button>
+    <a class="btn" href="{{ url_for('products') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

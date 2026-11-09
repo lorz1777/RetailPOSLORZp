@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% set section = 'reports' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sales reports</h1>
+  <a class="btn" href="{{ url_for('reports_export', start=start, end=end) }}">Download CSV</a>
+</div>
+
+<form class="toolbar" method="get">
+  <label>From <input type="date" name="start" value="{{ start }}"></label>
+  <label>To <input type="date" name="end" value="{{ end }}"></label>
+  <button class="btn" type="submit">Apply</button>
+  <span class="presets">
+    {% for label, s, e in presets %}<a href="{{ url_for('reports', start=s, end=e) }}">{{ label }}</a>{% endfor %}
+  </span>
+</form>
+
+<div class="stats">
+  <div class="card stat"><span class="stat-label">Revenue (incl. tax)</span><span class="stat-value">{{ summary.revenue|money }}</span></div>
+  <div class="card stat"><span class="stat-label">Gross profit</span><span class="stat-value">{{ gross_profit|money }}</span></div>
+  <div class="card stat"><span class="stat-label">Transactions</span><span class="stat-value">{{ summary.transactions }}</span></div>
+  <div class="card stat"><span class="stat-label">Items sold</span><span class="stat-value">{{ items|int }}</span></div>
+  <div class="card stat"><span class="stat-label">Average sale</span><span class="stat-value">{{ avg_sale|money }}</span></div>
+  <div class="card stat"><span class="stat-label">Tax collected</span><span class="stat-value">{{ summary.tax|money }}</span></div>
+  <div class="card stat"><span class="stat-label">Discounts given</span><span class="stat-value">{{ summary.discounts|money }}</span></div>
+  <div class="card stat"><span class="stat-label">Voided sales</span><span class="stat-value">{{ voided.n }}</span><span class="muted small-text">{{ voided.amount|money }} (not counted above)</span></div>
+</div>
+<p class="muted small-text">Gross profit = item sales minus item cost, minus discounts, before tax. It relies on the cost price entered for each product.</p>
+
+<div class="two-col">
+  <section class="card">
+    <div class="card-head"><h2>Daily sales</h2></div>
+    <table>
+      <thead><tr><th>Day</th><th class="num">Sales</th><th class="num">Revenue</th><th class="barcell"></th></tr></thead>
+      <tbody>
+      {% for d in daily %}
+        <tr>
+          <td>{{ d.day.strftime('%a %d %b') }}</td>
+          <td class="num">{{ d.transactions }}</td>
+          <td class="num">{{ d.revenue|money }}</td>
+          <td class="barcell"><div class="bar"><span style="width: {{ '%.1f' % d.pct }}%"></span></div></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted center">No sales in this period.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>Top products</h2></div>
+      <table>
+        <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Revenue</th></tr></thead>
+        <tbody>
+        {% for t in top %}
+          <tr><td>{{ t.product_name }} <span class="muted small-text">{{ t.sku }}</span></td><td class="num">{{ t.qty|int }}</td><td class="num">{{ t.revenue|money }}</td></tr>
+        {% else %}
+          <tr><td colspan="3" class="muted center">No sales in this period.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>By payment method</h2></div>
+      <table>
+        <thead><tr><th>Method</th><th class="num">Sales</th><th class="num">Revenue</th></tr></thead>
+        <tbody>
+        {% for m in methods %}
+          <tr><td>{{ m.payment_method|capitalize }}</td><td class="num">{{ m.transactions }}</td><td class="num">{{ m.revenue|money }}</td></tr>
+        {% else %}
+          <tr><td colspan="3" class="muted center">No sales in this period.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
+{% endblock %}

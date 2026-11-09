@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set section = 'inventory' %}
+{% block title %}Inventory{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Inventory</h1>
+  <a class="btn" href="{{ url_for('stock_movements') }}">Stock history</a>
+</div>
+
+<div class="stats">
+  <div class="card stat"><span class="stat-label">Active products</span><span class="stat-value">{{ summary.products }}</span></div>
+  <div class="card stat"><span class="stat-label">Units on hand</span><span class="stat-value">{{ summary.units|int }}</span></div>
+  <div class="card stat"><span class="stat-label">Stock value (cost)</span><span class="stat-value">{{ summary.cost_value|money }}</span></div>
+  <div class="card stat {{ 'alert' if summary.low|int }}"><span class="stat-label">Low or out of stock</span><span class="stat-value">{{ summary.low|int }}</span></div>
+</div>
+
+<form class="toolbar" method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, SKU, barcode or category">
+  <label class="check"><input type="checkbox" name="low" value="1" {{ 'checked' if low_only }}> Low stock only</label>
+  <button class="btn" type="submit">Filter</button>
+</form>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>Product</th><th class="num">In stock</th><th class="num">Reorder at</th><th>Status</th><th>Adjust stock</th></tr>
+    </thead>
+    <tbody>
+    {% for p in items %}
+      <tr id="p{{ p.id }}">
+        <td>{{ p.name }}<br><span class="muted small-text">{{ p.sku }}{% if p.category %} · {{ p.category }}{% endif %}</span></td>
+        <td class="num strong">{{ p.stock }}</td>
+        <td class="num">{{ p.reorder_level }}</td>
+        <td>
+          {% if p.stock <= 0 %}<span class="badge danger">Out of stock</span>
+          {% elif p.stock <= p.reorder_level %}<span class="badge warn">Low</span>
+          {% else %}<span class="badge ok">OK</span>{% endif %}
+        </td>
+        <td>
+          <form method="post" action="{{ url_for('inventory_adjust', pid=p.id) }}" class="adjust">
+            <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+            <select name="action" aria-label="Adjustment type">
+              <option value="restock">Add stock (+)</option>
+              <option value="damage">Remove: damaged / lost (−)</option>
+              <option value="count">Set counted quantity (=)</option>
+            </select>
+            <input type="number" name="quantity" min="0" max="1000000" step="1" placeholder="Qty" required aria-label="Quantity">
+            <input type="text" name="note" maxlength="255" placeholder="Note (optional)" aria-label="Note">
+            <button class="btn small primary" type="submit">Apply</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted center">No products match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

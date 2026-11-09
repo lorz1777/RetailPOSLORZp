@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% set section = 'pos' %}
+{% block title %}Checkout{% endblock %}
+{% block main_class %}wide{% endblock %}
+{% block content %}
+<div id="pos" class="pos" data-csrf="{{ csrf_token() }}" data-tax-rate="{{ tax_rate }}" data-currency="{{ currency }}">
+
+  <section class="card pos-products">
+    <input id="search" type="search" placeholder="Scan a barcode or search by name / SKU…" autocomplete="off" autofocus>
+    <div id="results" class="tiles" aria-live="polite"></div>
+  </section>
+
+  <section class="card pos-cart">
+    <h2><i class="bi bi-cart3 me-2"></i>Current sale</h2>
+
+    <div id="done" class="notice ok" hidden>
+      <strong id="done-title"></strong>
+      <div id="done-detail"></div>
+      <a id="done-link" class="btn small" href="#" target="_blank" rel="noopener">View / print receipt</a>
+    </div>
+    <p id="pos-msg" class="notice error" role="alert" hidden></p>
+
+    <p id="cart-empty" class="muted">The cart is empty. Scan or tap a product to add it.</p>
+    <table class="cart" hidden>
+      <tbody id="cart-body"></tbody>
+    </table>
+
+    <dl class="totals">
+      <div>
+        <dt>Subtotal</dt>
+        <dd id="t-sub">{{ currency }}0.00</dd>
+      </div>
+      <div class="discount-row">
+        <dt><label for="discount">Discount ({{ currency }})</label></dt>
+        <dd><input id="discount" type="number" min="0" step="0.01" placeholder="0.00" inputmode="decimal"></dd>
+      </div>
+      <div>
+        <dt>Tax ({{ tax_percent }}%)</dt>
+        <dd id="t-tax">{{ currency }}0.00</dd>
+      </div>
+      <div class="grand">
+        <dt>Total</dt>
+        <dd id="t-total">{{ currency }}0.00</dd>
+      </div>
+    </dl>
+
+    <div class="pay">
+      <label>Payment method
+        <select id="method">
+          <option value="cash">Cash</option>
+          <option value="card">Card</option>
+          <option value="ewallet">E-wallet</option>
+        </select>
+      </label>
+      <div id="tender-row">
+        <label>Cash received ({{ currency }})
+          <span class="row tight">
+            <input id="tendered" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+            <button id="exact" type="button" class="btn small">Exact</button>
+          </span>
+        </label>
+        <div class="change-line">Change due <strong id="t-change">{{ currency }}0.00</strong></div>
+      </div>
+      <button id="pay" class="btn primary block big" type="button" disabled><i
+          class="bi bi-check2-circle me-1"></i>Complete sale</button>
+      <button id="clear" class="btn block" type="button"><i class="bi bi-trash3 me-1"></i>Clear cart</button>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='pos.js') }}"></script>
+<script>
+  /* confetti when a sale is completed (watches the existing #done box, pos.js is untouched) */
+  (function () {
+    var done = document.getElementById('done');
+    if (!done || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var shown = !done.hidden, colors = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997'];
+    function burst() {
+      for (var i = 0; i < 60; i++) {
+        var c = document.createElement('span');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[i % colors.length];
+        c.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+        c.style.animationDelay = (Math.random() * .4) + 's';
+        c.style.setProperty('--drift', (Math.random() * 160 - 80) + 'px');
+        document.body.appendChild(c);
+        setTimeout(function (el) { el.remove(); }, 4500, c);
+      }
+    }
+    new MutationObserver(function () {
+      var now = !done.hidden;
+      if (now && !shown) burst();
+      shown = now;
+    }).observe(done, { attributes: true, attributeFilter: ['hidden'] });
+  })();
+</script>
+{% endblock %}

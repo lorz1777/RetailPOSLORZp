@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · {{ store_name }}</title>
+  <script>
+    /* apply saved / system theme before paint to avoid a flash */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) { }
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-bs-theme', t);
+    })();
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  {% if session.admin_id %}
+  <div class="app">
+    <div class="sidebar-backdrop d-lg-none no-print" id="sb-backdrop"></div>
+    <aside id="sidebar" class="sidebar no-print" data-bs-theme="dark" aria-label="Main menu">
+      <div class="sidebar-head">
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+          <i class="bi bi-shop"></i><span>{{ store_name }}</span>
+        </a>
+        <button type="button" id="menu-close" class="btn-close d-lg-none" aria-label="Close menu"></button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Pages">
+        {% for key, endpoint, label, icon in [
+        ('dashboard', 'dashboard', 'Dashboard', 'speedometer2'),
+        ('pos', 'pos', 'Checkout', 'cart3'),
+        ('products', 'products', 'Products', 'box-seam'),
+        ('inventory', 'inventory', 'Inventory', 'clipboard-data'),
+        ('sales', 'sales', 'Sales', 'receipt'),
+        ('reports', 'reports', 'Reports', 'bar-chart-line')] %}
+        <a href="{{ url_for(endpoint) }}" class="side-link {{ 'active' if section == key }}">
+          <i class="bi bi-{{ icon }}"></i><span>{{ label }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="sidebar-label">Settings</div>
+        <a class="side-link" href="{{ url_for('change_password') }}" title="Change password">
+          <i class="bi bi-person-circle"></i><span>{{ session.username }}</span>
+        </a>
+        <button id="theme-toggle" class="side-link" type="button" aria-label="Toggle dark mode"></button>
+        <form method="post" action="{{ url_for('logout') }}" class="m-0">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="side-link side-logout" type="submit"><i class="bi bi-box-arrow-right"></i><span>Log
+              out</span></button>
+        </form>
+      </div>
+    </aside>
+
+    <div class="app-content">
+      <header class="mobile-bar d-lg-none no-print" data-bs-theme="dark">
+        <button id="menu-btn" class="btn btn-sm btn-outline-light" type="button" aria-label="Open menu"><i
+            class="bi bi-list fs-5"></i></button>
+        <a class="mobile-brand" href="{{ url_for('dashboard') }}">{{ store_name }}</a>
+      </header>
+      {% endif %}
+      <main class="{% block main_class %}{% endblock %}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        {% set kind = {'ok': 'success', 'success': 'success', 'error': 'danger', 'danger': 'danger', 'warning':
+        'warning',
+        'warn': 'warning'}.get(category, 'info') %}
+        {% set icon = {'success': 'check-circle-fill', 'danger': 'exclamation-octagon-fill', 'warning':
+        'exclamation-triangle-fill', 'info': 'info-circle-fill'}[kind] %}
+        <div class="alert alert-{{ kind }} alert-dismissible fade show d-flex align-items-center flash" role="status">
+          <i class="bi bi-{{ icon }} me-2"></i>
+          <div>{{ message }}</div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+      {% if session.admin_id %}
+    </div>
+  </div>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function () {
+      /* dark / light toggle */
+      var root = document.documentElement, btn = document.getElementById('theme-toggle');
+      function paint() {
+        if (!btn) return;
+        btn.innerHTML = root.getAttribute('data-bs-theme') === 'dark'
+          ? '<i class="bi bi-sun"></i><span>Light mode</span>' : '<i class="bi bi-moon-stars"></i><span>Dark mode</span>';
+      }
+      paint();
+      if (btn) btn.addEventListener('click', function () {
+        var next = root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-bs-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) { }
+        paint();
+      });
+
+      /* mobile menu */
+      function setMenu(open) { document.body.classList.toggle('menu-open', open); }
+      [['menu-btn', true], ['menu-close', false], ['sb-backdrop', false]].forEach(function (x) {
+        var el = document.getElementById(x[0]);
+        if (el) el.addEventListener('click', function () { setMenu(x[1]); });
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+
+      /* flash messages fade out by themselves */
+      document.querySelectorAll('.flash').forEach(function (el) {
+        setTimeout(function () {
+          if (el.isConnected) bootstrap.Alert.getOrCreateInstance(el).close();
+        }, 5000);
+      });
+
+      /* press "/" to jump to the search box */
+      document.addEventListener('keydown', function (e) {
+        var tag = (e.target.tagName || '').toLowerCase();
+        if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        var s = document.querySelector('input[type="search"]');
+        if (s) { e.preventDefault(); s.focus(); s.select(); }
+      });
+
+      /* stat numbers count up on load */
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.querySelectorAll('.stat-value').forEach(function (el) {
+          var orig = el.textContent, m = orig.trim().match(/^(\D*?)(\d[\d,]*(?:\.\d+)?)(\D*)$/);
+          if (!m) return;
+          var dec = (m[2].split('.')[1] || '').length, end = parseFloat(m[2].replace(/,/g, ''));
+          if (!isFinite(end) || end === 0) return;
+          var t0 = null;
+          (function step(t) {
+            if (t0 === null) t0 = t;
+            var p = Math.min((t - t0) / 700, 1), e = 1 - Math.pow(1 - p, 3);
+            if (p < 1) {
+              el.textContent = m[1] + (end * e).toLocaleString('en-US',
+                { minimumFractionDigits: dec, maximumFractionDigits: dec }) + m[3];
+              requestAnimationFrame(step);
+            } else { el.textContent = orig; }
+          })(performance.now());
+        });
+      }
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

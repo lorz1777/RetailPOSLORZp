@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% set section = 'sales' %}
+{% block title %}Sales{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sales</h1>
+  <a class="btn primary" href="{{ url_for('pos') }}">New sale</a>
+</div>
+
+<form class="toolbar" method="get">
+  <label>From <input type="date" name="start" value="{{ start }}"></label>
+  <label>To <input type="date" name="end" value="{{ end }}"></label>
+  <button class="btn" type="submit">Apply</button>
+  <span class="muted">{{ count }} sale{{ '' if count == 1 else 's' }}</span>
+</form>
+
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr><th>Receipt</th><th>Date &amp; time</th><th>Cashier</th><th>Payment</th><th class="num">Discount</th><th class="num">Tax</th><th class="num">Total</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+    {% for s in sales %}
+      <tr class="{{ 'inactive' if s.status == 'voided' }}">
+        <td><a href="{{ url_for('sale_detail', sale_id=s.id) }}">{{ s.id|receipt_no }}</a></td>
+        <td>{{ s.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td>{{ s.username or '' }}</td>
+        <td>{{ s.payment_method|capitalize }}</td>
+        <td class="num">{{ s.discount|money }}</td>
+        <td class="num">{{ s.tax|money }}</td>
+        <td class="num strong">{{ s.total|money }}</td>
+        <td>{% if s.status == 'voided' %}<span class="badge danger">Voided</span>{% else %}<span class="badge ok">Completed</span>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="muted center">No sales in this date range.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn small" href="{{ url_for('sales', start=start, end=end, page=page - 1) }}">&larr; Newer</a>{% endif %}
+  <span class="muted">Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn small" href="{{ url_for('sales', start=start, end=end, page=page + 1) }}">Older &rarr;</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

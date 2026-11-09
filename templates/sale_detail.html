@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% set section = 'sales' %}
+{% block title %}Receipt {{ sale.id|receipt_no }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <a href="{{ url_for('sales') }}">&larr; All sales</a>
+  <div class="row">
+    <button class="btn" type="button" onclick="window.print()">Print receipt</button>
+    {% if sale.status == 'completed' %}
+    <form method="post" action="{{ url_for('sale_void', sale_id=sale.id) }}" class="inline"
+          onsubmit="return confirm('Void this sale? The items will be returned to stock.');">
+      <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+      <button class="btn danger" type="submit">Void sale</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<article class="card receipt">
+  <header>
+    <h1>{{ store_name }}</h1>
+    <p class="muted">Receipt {{ sale.id|receipt_no }}</p>
+    <p class="muted">{{ sale.created_at.strftime('%d %b %Y, %H:%M') }}{% if sale.username %} · Cashier: {{ sale.username }}{% endif %}</p>
+    {% if sale.status == 'voided' %}
+      <p><span class="badge danger">VOIDED{% if sale.voided_at %} {{ sale.voided_at.strftime('%d %b %Y %H:%M') }}{% endif %}</span></p>
+    {% endif %}
+  </header>
+
+  <table>
+    <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for l in lines %}
+      <tr>
+        <td>{{ l.product_name }}<br><span class="muted small-text">{{ l.sku }}</span></td>
+        <td class="num">{{ l.qty }}</td>
+        <td class="num">{{ l.unit_price|money }}</td>
+        <td class="num">{{ l.line_total|money }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <dl class="totals">
+    <div><dt>Subtotal</dt><dd>{{ sale.subtotal|money }}</dd></div>
+    {% if sale.discount > 0 %}<div><dt>Discount</dt><dd>&minus;{{ sale.discount|money }}</dd></div>{% endif %}
+    <div><dt>Tax</dt><dd>{{ sale.tax|money }}</dd></div>
+    <div class="grand"><dt>Total</dt><dd>{{ sale.total|money }}</dd></div>
+    <div><dt>Paid by {{ sale.payment_method|capitalize }}</dt><dd>{{ sale.amount_paid|money }}</dd></div>
+    {% if sale.change_due > 0 %}<div><dt>Change</dt><dd>{{ sale.change_due|money }}</dd></div>{% endif %}
+  </dl>
+  <p class="center muted">Thank you for shopping with us!</p>
+</article>
+{% endblock %}
